@@ -1,8 +1,9 @@
 import time
 import requests
+import os
 import random
 
-# Blaze API para histórico de roletas
+# Blaze API para obter histórico de roletas
 BLAZE_API = "https://blaze.com/api/roulette_games/recent"
 
 # Emojis
@@ -12,47 +13,63 @@ COLORS = {
     "2": "⚫",  # Preto
 }
 
-# Mapeamento de resultados (conforme cores)
-def get_last_color():
-    try:
-        response = requests.get(BLAZE_API)
-        data = response.json()
-        if isinstance(data, list) and len(data) > 0:
-            result = data[0]['color']
-            return str(result)
-    except Exception as e:
-        print(f"Erro ao obter histórico da Blaze: {e}")
-    return None
-
-# Gera uma entrada válida (evita 🔴+⚫ e ⚫+🔴)
+# Gera entrada válida (sem vermelho+preto ou preto+vermelho)
 def gerar_entrada():
     entradas_validas = [("⚪", "🔴"), ("⚪", "⚫")]
     return random.choice(entradas_validas)
 
-# Loop do bot
+# Limpa a tela no Termux / Linux
+def limpar_tela():
+    os.system('clear')
+
+# Obtém várias cores anteriores
+def get_historico_cores():
+    try:
+        response = requests.get(BLAZE_API)
+        data = response.json()
+        if isinstance(data, list):
+            return [COLORS.get(str(jogo['color']), "?") for jogo in data]
+    except Exception as e:
+        print(f"Erro ao obter histórico: {e}")
+    return []
+
+# Função principal do bot
 def main():
-    print("BOT BLAZE ENTRADAS\n")
-    entrada_atual = None
-
     while True:
-        cor_atual = get_last_color()
-        if cor_atual:
-            emoji_cor = COLORS.get(cor_atual, "?")
-            print(f"HISTÓRICO: {emoji_cor}")
+        limpar_tela()
 
-            entrada = gerar_entrada()
-            entrada_str = f"{entrada[0]}+{entrada[1]}"
-            print(f"ENTRADA: {entrada_str}")
+        print("BOT BLAZE ENTRADAS\n")
 
-            # Verifica se a entrada bateu com o resultado atual
-            if emoji_cor in entrada:
-                print(f"✅ DEU BOM! Resultado: {emoji_cor}\n")
-            else:
-                print(f"❌ NÃO BATEU! Resultado: {emoji_cor}\n")
+        historico = get_historico_cores()
+        if not historico:
+            print("Erro ao obter dados da Blaze. Tentando novamente...")
+            time.sleep(10)
+            continue
+
+        print(f"HISTÓRICOS:{''.join(historico)}")
+        print("-" * 37)
+
+        entrada = gerar_entrada()
+        entrada_str = f"{entrada[0]}+{entrada[1]}"
+        print(f"ENTRADA: {entrada_str}")
+        print("AGUARDANDO RESULTADO...")
+
+        time.sleep(15)  # Espera nova rodada
+
+        nova_cor = get_historico_cores()
+        if not nova_cor:
+            print("Erro ao obter resultado. Tentando novamente...")
+            time.sleep(10)
+            continue
+
+        resultado = nova_cor[0]
+        if resultado in entrada:
+            print("DEU GREEN ✅")
         else:
-            print("Erro ao obter a última cor da Blaze. Tentando novamente...\n")
+            print("DEU LOSS ❌")
 
-        time.sleep(15)  # Espera 15 segundos antes de consultar de novo
+        time.sleep(5)  # Tempo antes de limpar e reiniciar
 
+# Executa
 if __name__ == "__main__":
     main()
