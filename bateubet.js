@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright'); // playwright funciona melhor no Termux
 
 (async () => {
   const readline = require('readline').createInterface({
@@ -7,35 +7,21 @@ const puppeteer = require('puppeteer');
   });
 
   readline.question('Digite o CPF: ', async (cpf) => {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+    const browser = await chromium.launch({ headless: true }); // headless true funciona sem abrir interface
     const page = await browser.newPage();
-    await page.goto('https://bateu.bet.br', { waitUntil: 'networkidle2' });
+    await page.goto('https://bateu.bet.br', { waitUntil: 'networkidle' });
 
     // Clica no botão "Registre-se"
-    await page.evaluate(() => {
-      const spans = Array.from(document.querySelectorAll('span'));
-      const target = spans.find(s => s.textContent.includes('Registre-se'));
-      if (target) target.click();
-    });
+    await page.locator('span', { hasText: 'Registre-se' }).click();
 
-    // Espera o campo de CPF aparecer
-    await page.waitForSelector('input[name="cpf"], input[placeholder*="CPF"]', { timeout: 10000 });
+    // Espera e preenche o CPF
+    await page.locator('input[placeholder*="CPF"]').fill(cpf);
 
-    // Preenche o CPF
-    await page.type('input[name="cpf"], input[placeholder*="CPF"]', cpf);
+    await page.waitForTimeout(3000); // espera possíveis dados carregarem
 
-    // Aguarda um tempo para os dados carregarem (ou evento ocorrer)
-    await page.waitForTimeout(3000);
-
-    // Tira o texto da página (como resposta visível)
-    const bodyText = await page.evaluate(() => document.body.innerText);
-
-    console.log("\n=== CONTEÚDO DA PÁGINA ===");
-    console.log(bodyText);
+    const content = await page.content();
+    console.log('\n=== HTML da página ===\n');
+    console.log(content);
 
     await browser.close();
     readline.close();
