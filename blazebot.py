@@ -6,78 +6,71 @@ import random
 # Blaze API
 BLAZE_API = "https://blaze.com/api/roulette_games/recent"
 
-# Cores e emojis
+# Cores e Emojis
 COLORS = {
     "0": "⚪",
     "1": "🔴",
     "2": "⚫",
 }
 
-# Entradas válidas
+# Entradas válidas possíveis
 ENTRADAS_VALIDAS = [("⚪", "🔴"), ("⚪", "⚫")]
+
+# Limpa terminal
+def limpar_tela():
+    os.system("clear")
 
 # Gera entrada aleatória
 def gerar_entrada():
     return random.choice(ENTRADAS_VALIDAS)
 
-# Limpa tela do terminal
-def limpar_tela():
-    os.system("clear")
-
-# Obtém os 15 últimos resultados da Blaze
+# Busca o histórico mais recente
 def get_historico_cores():
     try:
         response = requests.get(BLAZE_API)
         data = response.json()
         if isinstance(data, list):
             return [COLORS.get(str(jogo['color']), "?") for jogo in data][:15]
-    except Exception as e:
-        print(f"Erro ao obter histórico: {e}")
+    except:
+        pass
     return []
 
-# Exibe painel de histórico + entrada
-def exibir_painel(historico, entrada, entradas_total):
+# Mostra painel
+def exibir_painel(historico, entrada, entrada_id):
     limpar_tela()
     print("=" * 60)
     print("              🎰 BOT BLAZE DOUBLE - MONITOR")
     print("=" * 60)
     print(f"🕒 Últimos Resultados: {' '.join(historico)}")
     print("-" * 60)
-
-    entrada_str = f"{entrada[0]} + {entrada[1]}"
-    print(f"🎯 Entrada atual: {entrada_str} (entrada #{entradas_total})")
+    print(f"🎯 Entrada #{entrada_id}: {entrada[0]} + {entrada[1]}")
     print("-" * 60)
     print("⏳ Aguardando nova rodada...\n")
 
 # Função principal
 def main():
     historico_anterior = []
+    entrada_id = 1
     entrada = gerar_entrada()
-    tempo_ultima_entrada = time.time()
-    entradas_total = 1
 
     while True:
         historico = get_historico_cores()
         if not historico or len(historico) < 2:
-            print("⏳ Aguardando dados válidos da Blaze...")
+            print("⏳ Aguardando dados da Blaze...")
             time.sleep(2)
             continue
 
-        agora = time.time()
-
-        # Nova entrada a cada 10s
-        if agora - tempo_ultima_entrada >= 10:
-            entrada = gerar_entrada()
-            tempo_ultima_entrada = agora
-            entradas_total += 1
-
-        # Atualiza o painel se houve mudança no histórico
+        # Detecta nova rodada
         if historico != historico_anterior:
             historico_anterior = historico
-            exibir_painel(historico, entrada, entradas_total)
+            exibir_painel(historico, entrada, entrada_id)
 
-        time.sleep(2)
+            # Gera nova entrada para próxima rodada
+            entrada = gerar_entrada()
+            entrada_id += 1
 
-# Inicia
+        time.sleep(1.5)
+
+# Executa
 if __name__ == "__main__":
     main()
