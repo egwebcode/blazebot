@@ -6,88 +6,78 @@ import random
 # Blaze API
 BLAZE_API = "https://blaze.com/api/roulette_games/recent"
 
-# Cores e Emojis
+# Cores e emojis
 COLORS = {
-    "0": "⚪",  # Branco
-    "1": "🔴",  # Vermelho
-    "2": "⚫",  # Preto
+    "0": "⚪",
+    "1": "🔴",
+    "2": "⚫",
 }
 
-# Gera uma entrada válida
-def gerar_entrada():
-    return random.choice([("⚪", "🔴"), ("⚪", "⚫")])
+# Entradas válidas
+ENTRADAS_VALIDAS = [("⚪", "🔴"), ("⚪", "⚫")]
 
-# Limpa tela (Linux/Termux)
+# Gera entrada aleatória
+def gerar_entrada():
+    return random.choice(ENTRADAS_VALIDAS)
+
+# Limpa tela do terminal
 def limpar_tela():
     os.system("clear")
 
-# Busca o histórico de resultados
+# Obtém os 15 últimos resultados da Blaze
 def get_historico_cores():
     try:
         response = requests.get(BLAZE_API)
         data = response.json()
         if isinstance(data, list):
-            return [COLORS.get(str(jogo['color']), "?") for jogo in data][:15]  # Últimos 15
+            return [COLORS.get(str(jogo['color']), "?") for jogo in data][:15]
     except Exception as e:
         print(f"Erro ao obter histórico: {e}")
     return []
 
-# Exibe painel informativo com estatísticas
-def exibir_painel(historico, entrada, greens, losses, total):
+# Exibe painel de histórico + entrada
+def exibir_painel(historico, entrada, entradas_total):
     limpar_tela()
-    print("=" * 50)
-    print("          🎰 BOT BLAZE DOUBLE - MONITOR AO VIVO")
-    print("=" * 50)
+    print("=" * 60)
+    print("              🎰 BOT BLAZE DOUBLE - MONITOR")
+    print("=" * 60)
     print(f"🕒 Últimos Resultados: {' '.join(historico)}")
-    print("-" * 50)
+    print("-" * 60)
 
-    # Estatísticas
-    if total > 0:
-        porcentagem = (greens / total) * 100
-    else:
-        porcentagem = 0.0
-
-    print(f"🎯 Entrada atual: {entrada[0]} + {entrada[1]}")
-    print(f"✅ GREENS: {greens}   ❌ LOSSES: {losses}   🎯 Assertividade: {porcentagem:.2f}%")
-    print("-" * 50)
-    print("⏳ Aguardando próximo resultado...\n")
+    entrada_str = f"{entrada[0]} + {entrada[1]}"
+    print(f"🎯 Entrada atual: {entrada_str} (entrada #{entradas_total})")
+    print("-" * 60)
+    print("⏳ Aguardando nova rodada...\n")
 
 # Função principal
 def main():
-    greens = 0
-    losses = 0
-    total = 0
-    entrada = gerar_entrada()
     historico_anterior = []
+    entrada = gerar_entrada()
+    tempo_ultima_entrada = time.time()
+    entradas_total = 1
 
     while True:
         historico = get_historico_cores()
         if not historico or len(historico) < 2:
-            print("Aguardando dados válidos da Blaze...")
+            print("⏳ Aguardando dados válidos da Blaze...")
             time.sleep(2)
             continue
 
-        # Atualiza painel se houver nova rodada
-        if historico != historico_anterior:
-            resultado = historico[0]
+        agora = time.time()
 
-            if resultado in entrada:
-                greens += 1
-                status = "✅ GREEN!"
-            else:
-                losses += 1
-                status = "❌ LOSS!"
-
-            total += 1
+        # Nova entrada a cada 10s
+        if agora - tempo_ultima_entrada >= 10:
             entrada = gerar_entrada()
+            tempo_ultima_entrada = agora
+            entradas_total += 1
+
+        # Atualiza o painel se houve mudança no histórico
+        if historico != historico_anterior:
             historico_anterior = historico
+            exibir_painel(historico, entrada, entradas_total)
 
-            exibir_painel(historico, entrada, greens, losses, total)
-            print(f"🎲 Resultado: {resultado} → {status}")
-            time.sleep(2)
-        else:
-            time.sleep(2)
+        time.sleep(2)
 
-# Executar
+# Inicia
 if __name__ == "__main__":
     main()
