@@ -1,76 +1,27 @@
-import time
-import requests
-import os
-import random
+#!/data/data/com.termux/files/usr/bin/bash
 
-# Blaze API
-BLAZE_API = "https://blaze.com/api/roulette_games/recent"
+# Troque pela sua chave da API do Shodan
+API_KEY="SUA_API_KEY_AQUI"
 
-# Cores e Emojis
-COLORS = {
-    "0": "⚪",
-    "1": "🔴",
-    "2": "⚫",
-}
+read -p "🔍 Digite sua consulta (ex: webcam 7): " QUERY
 
-# Entradas válidas possíveis
-ENTRADAS_VALIDAS = [("⚪", "🔴"), ("⚪", "⚫")]
+# Formata a query
+ENCODED_QUERY=$(echo "$QUERY" | sed 's/ /%20/g')
 
-# Limpa terminal
-def limpar_tela():
-    os.system("clear")
+echo "⏳ Buscando dados no Shodan..."
 
-# Gera entrada aleatória
-def gerar_entrada():
-    return random.choice(ENTRADAS_VALIDAS)
+curl -s "https://api.shodan.io/shodan/host/search?key=$API_KEY&query=$ENCODED_QUERY" | jq -c '.matches[]' | while read -r host; do
+  ip=$(echo "$host" | jq -r '.ip_str')
+  port=$(echo "$host" | jq -r '.port')
+  org=$(echo "$host" | jq -r '.org // "N/A"')
+  country=$(echo "$host" | jq -r '.location.country_name // "N/A"')
+  city=$(echo "$host" | jq -r '.location.city // "N/A"')
+  hostnames=$(echo "$host" | jq -r '.hostnames | join(", ") // "N/A"')
 
-# Busca o histórico mais recente
-def get_historico_cores():
-    try:
-        response = requests.get(BLAZE_API)
-        data = response.json()
-        if isinstance(data, list):
-            return [COLORS.get(str(jogo['color']), "?") for jogo in data][:15]
-    except:
-        pass
-    return []
-
-# Mostra painel
-def exibir_painel(historico, entrada, entrada_id):
-    limpar_tela()
-    print("=" * 60)
-    print("              🎰 BOT BLAZE DOUBLE - MONITOR")
-    print("=" * 60)
-    print(f"🕒 Últimos Resultados: {' '.join(historico)}")
-    print("-" * 60)
-    print(f"🎯 Entrada #{entrada_id}: {entrada[0]} + {entrada[1]}")
-    print("-" * 60)
-    print("⏳ Aguardando nova rodada...\n")
-
-# Função principal
-def main():
-    historico_anterior = []
-    entrada_id = 1
-    entrada = gerar_entrada()
-
-    while True:
-        historico = get_historico_cores()
-        if not historico or len(historico) < 2:
-            print("⏳ Aguardando dados da Blaze...")
-            time.sleep(2)
-            continue
-
-        # Detecta nova rodada
-        if historico != historico_anterior:
-            historico_anterior = historico
-            exibir_painel(historico, entrada, entrada_id)
-
-            # Gera nova entrada para próxima rodada
-            entrada = gerar_entrada()
-            entrada_id += 1
-
-        time.sleep(1.5)
-
-# Executa
-if __name__ == "__main__":
-    main()
+  echo "🌐 IP: $ip"
+  echo "📍 Localização: $city, $country"
+  echo "🏢 Organização: $org"
+  echo "🔌 Porta: $port"
+  echo "🔗 Hostnames: $hostnames"
+  echo "---------------------------"
+done
