@@ -1,30 +1,31 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# Consulta inicial
-read -p "🔍 Digite sua consulta (ex: webcam 7): " QUERY
-PAGE=1
+# Definir cores para o painel colorido
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+WHITE='\033[0;97m'
+RESET='\033[0m'
 
-# Função para buscar os IPs
-fetch_results() {
-    URL="https://www.shodan.io/search?query=$1&page=$2"
-    echo "⏳ Buscando resultados na página $2..."
+# Definir a chave da API do Shodan
+API_KEY="SUA_API_KEY_AQUI"
 
-    # Busca via curl e extrai IPs usando grep e sed
-    curl -s "$URL" | grep -oP 'IP: \K[\d\.]+' | while read -r ip; do
-        echo "🌐 IP encontrado: $ip"
-    done
+# Função para exibir o título inicial
+function show_banner() {
+    clear
+    echo -e "${CYAN}========================================================="
+    echo -e "${WHITE}          Shodan.io Professional Search Tool           "
+    echo -e "${WHITE}                 By EGWEBCODE - SHODAN.IO               "
+    echo -e "${CYAN}========================================================="
+    echo -e "${YELLOW}Bem-vindo ao painel profissional de pesquisa Shodan!"
+    echo -e "${CYAN}========================================================="
 }
 
-# Iniciar a busca
-while true; do
-    fetch_results "$QUERY" "$PAGE"
+# Função para buscar resultados com a API do Shodan
+function fetch_results() {
+    URL="https://api.shodan.io/shodan/host/search?key=$API_KEY&query=$1&page=$2"
+    echo -e "${CYAN}⏳ Buscando resultados na página $2..."
     
-    # Pergunta se o usuário quer ir para a próxima página
-    read -p "🔄 Deseja ir para a próxima página? (s/n): " choice
-    if [[ "$choice" == "s" ]]; then
-        PAGE=$((PAGE + 1))
-    else
-        echo "Pesquisa concluída."
-        break
-    fi
-done
+    curl -s "$URL" | jq -r '.matches[] | "
