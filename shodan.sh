@@ -9,9 +9,6 @@ CYAN='\033[0;36m'
 WHITE='\033[0;97m'
 RESET='\033[0m'
 
-# Definir a chave da API do Shodan
-API_KEY="SUA_API_KEY_AQUI"
-
 # Função para exibir o título inicial
 function show_banner() {
     clear
@@ -21,6 +18,20 @@ function show_banner() {
     echo -e "${CYAN}========================================================="
     echo -e "${YELLOW}Bem-vindo ao painel profissional de pesquisa Shodan!"
     echo -e "${CYAN}========================================================="
+}
+
+# Função para pedir e validar a chave da API
+function get_api_key() {
+    while true; do
+        echo -e "${CYAN}🔑 Por favor, insira sua chave da API do Shodan:"
+        read -s API_KEY
+        if [[ -z "$API_KEY" ]]; then
+            echo -e "${RED}A chave da API não pode estar vazia. Tente novamente.${RESET}"
+        else
+            echo -e "${GREEN}Chave da API recebida com sucesso!${RESET}"
+            break
+        fi
+    done
 }
 
 # Função para buscar resultados com a API do Shodan
