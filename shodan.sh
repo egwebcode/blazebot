@@ -40,3 +40,5 @@ function fetch_results() {
     echo -e "${CYAN}⏳ Buscando resultados na página $2..."
     
     curl -s "$URL" | jq -r '.matches[] | "
+
+    done
