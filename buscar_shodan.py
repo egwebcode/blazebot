@@ -5,29 +5,25 @@ import threading
 import socket
 import time
 import sys
-import select
 
-# Inicializa o terminal colorido
 init(autoreset=True)
 
-# Verifica se o modo verbose foi ativado com -v
 verbose = "-v" in sys.argv
 
-print(Fore.CYAN + Style.BRIGHT + "\n=== EGWEBCODE BUSCAR SHODAN FREE - ULTIMATE VERSION ===\n")
+print(Fore.CYAN + Style.BRIGHT + "\n=== EGWEBCODE BUSCAR SHODAN FREE - PAINEL AO VIVO ===\n")
+print(Fore.CYAN + "Pressione ENTER uma vez para encerrar...\n")
 
-# Configurações
 portas = [80, 8080, 8888, 443, 8443]
 palavras_login = ["login", "admin", "senha", "password", "sign in", "access", "panel"]
 lock = threading.Lock()
 resultados = []
+executando = True
 
-# Gera IPs sequenciais válidos
 def gerar_ips():
     for i in range(1, 4294967295):
         ip = socket.inet_ntoa(i.to_bytes(4, 'big'))
         yield ip
 
-# Função para escanear
 def escanear(ip, porta):
     protocolos = ["https"] if porta in [443, 8443] else ["http", "https"]
     for protocolo in protocolos:
@@ -48,7 +44,7 @@ def escanear(ip, porta):
             servidor = headers.get("Server", "Desconhecido")
 
             with lock:
-                print(Fore.GREEN + f"[ONLINE] {url}")
+                print(Fore.GREEN + f"[200 OK] {url}")
                 print(Fore.YELLOW + f"Status: {status}")
                 print(Fore.MAGENTA + f"Título: {titulo}")
                 print(Fore.BLUE + f"Servidor: {servidor}")
@@ -56,54 +52,45 @@ def escanear(ip, porta):
                     print(Fore.RED + "[ALERTA] Página de login detectada!")
                 print(Fore.CYAN + "------------------------------")
 
-                resultado = f"{url} - {status} - {titulo} - {servidor}"
-                resultados.append(resultado)
+                resultados.append(f"{url} - {status} - {titulo} - {servidor}")
 
         except requests.exceptions.RequestException:
-            pass
+            if verbose:
+                with lock:
+                    print(Fore.RED + f"[ERRO] {url} não respondeu.")
+                    print(Fore.CYAN + "------------------------------")
 
-# Listener para detectar ENTER + ENTER
-def esperar_dois_enters():
-    enter_count = 0
-    print(Fore.CYAN + "Pressione ENTER duas vezes para encerrar...")
-    while True:
-        if select.select([sys.stdin], [], [], 0.1)[0]:
-            input()
-            enter_count += 1
-            if enter_count >= 2:
-                break
-        else:
-            enter_count = 0
+def escutar_enter_uma_vez():
+    global executando
+    try:
+        input()
+        executando = False
+    except:
+        pass
 
-# Início do scanner
 def iniciar_scanner():
-    ip_generator = gerar_ips()
-    while True:
-        ip = next(ip_generator)
+    ip_gen = gerar_ips()
+    while executando:
+        ip = next(ip_gen)
         for porta in portas:
             t = threading.Thread(target=escanear, args=(ip, porta))
             t.daemon = True
             t.start()
             time.sleep(0.01)
 
-# Execução principal
 if __name__ == "__main__":
     try:
-        # Roda o scanner em thread
-        thread_scanner = threading.Thread(target=iniciar_scanner)
-        thread_scanner.daemon = True
-        thread_scanner.start()
+        scanner_thread = threading.Thread(target=iniciar_scanner)
+        scanner_thread.start()
 
-        # Espera ENTER + ENTER
-        esperar_dois_enters()
+        escutar_enter_uma_vez()
 
-        # Salva os resultados encontrados
-        print(Fore.YELLOW + "\nSalvando resultados em 'resultados.txt'...\n")
+        print(Fore.YELLOW + "\nSalvando resultados em resultados.txt...")
         with open("resultados.txt", "w") as f:
             for linha in resultados:
                 f.write(linha + "\n")
 
-        print(Fore.GREEN + Style.BRIGHT + "\n✅ Scanner finalizado com sucesso!\n")
+        print(Fore.GREEN + Style.BRIGHT + "\n✅ Scanner finalizado com sucesso!")
 
     except KeyboardInterrupt:
         print(Fore.RED + "\nInterrompido manualmente.")
