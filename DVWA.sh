@@ -22,7 +22,7 @@ echo "Configurando DVWA..."
 cd DVWA/config || exit
 cp config.inc.php.dist config.inc.php
 
-# Corrige o config.inc.php com valores fixos, sem usar regex com grupos (sed simples)
+# Corrige o config.inc.php com valores fixos
 sed -i "s/\$_DVWA'db_user'.*/\$_DVWA[ 'db_user' ] = 'dvwa';/" config.inc.php
 sed -i "s/\$_DVWA'db_password'.*/\$_DVWA[ 'db_password' ] = 'dvwapass';/" config.inc.php
 sed -i "s/\$_DVWA'db_server'.*/\$_DVWA[ 'db_server' ] = '127.0.0.1';/" config.inc.php
@@ -39,7 +39,6 @@ CREATE DATABASE IF NOT EXISTS dvwa;
 CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwapass';
 GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost';
 FLUSH PRIVILEGES;
-EXIT;
 EOF
 
 echo "Iniciando Apache..."
