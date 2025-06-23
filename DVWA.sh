@@ -3,17 +3,17 @@
 echo "Atualizando pacotes..."
 pkg update -y && pkg upgrade -y
 
-echo "Instalando dependências..."
+echo "Instalando dependências necessárias..."
 pkg install apache2 php mariadb git nano unzip -y
 
-echo "Parando Apache e MariaDB se estiverem rodando..."
+echo "Matando processos do Apache e MariaDB (se existirem)..."
 pkill apache2
-pkill mysqld
+pkill mariadbd
 
 echo "Clonando DVWA..."
 cd /data/data/com.termux/files/usr/share/apache2/default-site/htdocs/ || exit
 if [ -d DVWA ]; then
-  echo "Pasta DVWA já existe, removendo..."
+  echo "Removendo instalação antiga do DVWA..."
   rm -rf DVWA
 fi
 git clone https://github.com/digininja/DVWA.git
@@ -22,18 +22,19 @@ echo "Configurando DVWA..."
 cd DVWA/config || exit
 cp config.inc.php.dist config.inc.php
 
-sed -i "s/\$_DVWA'db_user' *= *getenv('DB_USER') ?:.*/\1'dvwa';/" config.inc.php
-sed -i "s/\$_DVWA'db_password' *= *getenv('DB_PASSWORD') ?:.*/\1'dvwapass';/" config.inc.php
-sed -i "s/\$_DVWA'db_server' *= *getenv('DB_SERVER') ?:.*/\1'127.0.0.1';/" config.inc.php
-sed -i "s/\$_DVWA'db_database' *= *getenv('DB_DATABASE') ?:.*/\1'dvwa';/" config.inc.php
+# Corrige o config.inc.php com valores fixos, sem usar regex com grupos (sed simples)
+sed -i "s/\$_DVWA'db_user'.*/\$_DVWA[ 'db_user' ] = 'dvwa';/" config.inc.php
+sed -i "s/\$_DVWA'db_password'.*/\$_DVWA[ 'db_password' ] = 'dvwapass';/" config.inc.php
+sed -i "s/\$_DVWA'db_server'.*/\$_DVWA[ 'db_server' ] = '127.0.0.1';/" config.inc.php
+sed -i "s/\$_DVWA'db_database'.*/\$_DVWA[ 'db_database' ] = 'dvwa';/" config.inc.php
 
 echo "Iniciando MariaDB..."
-mysqld_safe &
+mariadbd-safe --datadir=$PREFIX/var/lib/mysql &
 
-sleep 5
+sleep 7
 
-echo "Criando banco e usuário MariaDB para DVWA..."
-mariadb -u root <<EOF
+echo "Criando banco e usuário para DVWA no MariaDB..."
+mariadb -u root -h 127.0.0.1 <<EOF
 CREATE DATABASE IF NOT EXISTS dvwa;
 CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwapass';
 GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost';
@@ -44,7 +45,12 @@ EOF
 echo "Iniciando Apache..."
 apachectl start
 
-echo "Instalação e configuração concluída!"
-echo "Abra no navegador: http://localhost:8080/DVWA/setup.php"
-echo "Clique em 'Create / Reset Database' e depois acesse http://localhost:8080/DVWA/login.php"
-echo "Login padrão: admin / password"
+echo "-------------------------------------------------------"
+echo "INSTALAÇÃO COMPLETA!"
+echo "Acesse no navegador: http://localhost:8080/DVWA/setup.php"
+echo "Clique em 'Create / Reset Database' para criar o banco."
+echo "Depois acesse http://localhost:8080/DVWA/login.php"
+echo "Login padrão:"
+echo "Usuário: admin"
+echo "Senha: password"
+echo "-------------------------------------------------------"
