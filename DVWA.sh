@@ -22,10 +22,9 @@ echo "Configurando DVWA..."
 cd DVWA/config || exit
 cp config.inc.php.dist config.inc.php
 
-# Corrige o config.inc.php com valores fixos
 sed -i "s/\$_DVWA'db_user'.*/\$_DVWA[ 'db_user' ] = 'dvwa';/" config.inc.php
 sed -i "s/\$_DVWA'db_password'.*/\$_DVWA[ 'db_password' ] = 'dvwapass';/" config.inc.php
-sed -i "s/\$_DVWA'db_server'.*/\$_DVWA[ 'db_server' ] = '127.0.0.1';/" config.inc.php
+sed -i "s/\$_DVWA'db_server'.*/\$_DVWA[ 'db_server' ] = 'localhost';/" config.inc.php
 sed -i "s/\$_DVWA'db_database'.*/\$_DVWA[ 'db_database' ] = 'dvwa';/" config.inc.php
 
 echo "Iniciando MariaDB..."
@@ -34,7 +33,7 @@ mariadbd-safe --datadir=$PREFIX/var/lib/mysql &
 sleep 7
 
 echo "Criando banco e usuário para DVWA no MariaDB..."
-mariadb -u root -h 127.0.0.1 <<EOF
+mariadb -u root <<EOF
 CREATE DATABASE IF NOT EXISTS dvwa;
 CREATE USER IF NOT EXISTS 'dvwa'@'localhost' IDENTIFIED BY 'dvwapass';
 GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'localhost';
