@@ -14,7 +14,7 @@ def limpar():
 def banner():
     print(f"""
 \033[1;32m╔══════════════════════════════════════╗
-║   🧪 {EG WEBCODE DNS MS TESTE} 🧪   ║
+║   🧪 EG WEBCODE DNS MS TESTE 🧪   ║
 ╚══════════════════════════════════════╝\033[0m
 """)
 
