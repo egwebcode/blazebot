@@ -33,7 +33,6 @@ def testar_dns_udp(ip, dominio='google.com', timeout=3):
     return False
 
 if __name__ == "__main__":
-    # Teste básico para um DNS conhecido
     test_dns = "1.1.1.1"
     print(f"Testando DNS UDP: {test_dns}")
     testar_dns_udp(test_dns)
