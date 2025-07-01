@@ -38,22 +38,19 @@ output="resultados_dns_$(date +%H%M%S).txt"
 
 testar_dns() {
     servidor=$1
-    tempo_inicial=$(date +%s%3N)
 
-    echo "" | timeout 1s nc -w1 -u "$servidor" 53 &>/dev/null
-    status=$?
-
-    tempo_final=$(date +%s%3N)
-    tempo_total=$((tempo_final - tempo_inicial))
-
-    if [[ $status -eq 0 ]]; then
-        echo -e "✅ $servidor - ${tempo_total}ms"
-        echo "$tempo_total $servidor" >> "$output"
+    # Executa dig com timeout e mede o tempo real
+    resultado=$(dig +time=1 +tries=1 @${servidor} google.com | grep "Query time")
+    if [[ -n "$resultado" ]]; then
+        tempo=$(echo "$resultado" | grep -o '[0-9]\+')
+        echo -e "✅ $servidor - ${tempo}ms"
+        echo "$tempo $servidor" >> "$output"
     else
         echo -e "❌ $servidor - sem resposta"
     fi
 }
 
+# Verificação em fila
 total=$(wc -l < "$dns_temp")
 contador=1
 
@@ -66,6 +63,7 @@ while IFS= read -r ip; do
     fi
 done < "$dns_temp"
 
+# Exibir ordenado
 echo -e "\n\e[1;32mServidores com resposta (ordenados por latência):\e[0m"
 sort -n "$output" | awk '{print "✅ " $2 " - " $1 "ms"}' | tee ordenados_$output
 
