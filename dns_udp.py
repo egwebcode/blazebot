@@ -1,143 +1,72 @@
-import socket, random, time, threading, os, subprocess
+#!/data/data/com.termux/files/usr/bin/bash
 
-NOME_PAINEL = "EG WEBCODE DNS UDP TUNNEL TESTE"
-dns_list = []
-resultados = []
+clear
+echo -e "\e[1;36m====== DNS UDP 53 - SCANNER LATÊNCIA ======\e[0m"
+echo -e "Escolha o modo de entrada:"
+echo -e "1) Inserir servidores DNS manualmente"
+echo -e "2) Usar lista de IPs via arquivo .txt"
 
-def limpar():
-    os.system("clear")
+read -p $'\nDigite sua opção (1 ou 2): ' modo
 
-def banner():
-    print(f"""\033[1;32m
-╔══════════════════════════════════════════╗
-║   📡 EG WEBCODE DNS UDP   ║
-╚══════════════════════════════════════════╝\033[0m
-""")
+dns_temp="dns_input_temp.txt"
+> "$dns_temp"  # Limpa arquivo temporário
 
-def menu():
-    banner()
-    print("[1] TESTAR DNS BÁSICOS CONHECIDOS")
-    print("[2] ESCOLHER UM ARQUIVO .TXT")
-    print("[3] TESTAR DNS LOCAL (getprop)")
-    print("[4] SAIR")
-    return input("\n➤ Escolha uma opção: ")
+if [[ "$modo" == "1" ]]; then
+    echo -e "\nDigite os IPs dos servidores DNS (um por vez)."
+    echo "Digite 'fim' para encerrar a entrada."
+    while true; do
+        read -p "IP: " ip
+        [[ "$ip" == "fim" ]] && break
+        echo "$ip" >> "$dns_temp"
+    done
+elif [[ "$modo" == "2" ]]; then
+    read -p $'\nDigite o nome do arquivo .txt com os IPs DNS: ' arquivo
+    if [[ ! -f "$arquivo" ]]; then
+        echo -e "\e[1;31mArquivo não encontrado!\e[0m"
+        exit 1
+    fi
+    cp "$arquivo" "$dns_temp"
+else
+    echo -e "\e[1;31mOpção inválida!\e[0m"
+    exit 1
+fi
 
-def construir_query_dns(hostname):
-    ID = random.randint(0, 65535)
-    FLAGS = 0x0100
-    QDCOUNT = 1
-    header = ID.to_bytes(2, 'big') + FLAGS.to_bytes(2, 'big') + \
-             QDCOUNT.to_bytes(2, 'big') + b'\x00\x00\x00\x00'
-    qname = b''.join((len(x).to_bytes(1, 'big') + x.encode() for x in hostname.split('.'))) + b'\x00'
-    qtype = (1).to_bytes(2, 'big')
-    qclass = (1).to_bytes(2, 'big')
-    return header + qname + qtype + qclass
+echo -e "\n\e[1;33mIniciando verificação...\e[0m"
 
-def testar_dns_udp(ip, dominio='google.com', timeout=2):
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(timeout)
-        consulta = construir_query_dns(dominio)
-        inicio = time.time()
-        sock.sendto(consulta, (ip, 53))
-        resposta, _ = sock.recvfrom(512)
-        duracao = round((time.time() - inicio) * 1000)
-        if resposta:
-            print(f"✅ {ip} respondeu via UDP em {duracao}ms")
-            resultados.append((ip, duracao))
-    except socket.timeout:
-        print(f"❌ {ip} NÃO respondeu (timeout)")
-    except Exception as e:
-        print(f"❌ {ip} erro: {e}")
-    finally:
-        sock.close()
+output="resultados_dns_$(date +%H%M%S).txt"
+> "$output"
 
-def carregar_dns_basicos():
-    return [
-        '1.1.1.1', '8.8.8.8', '9.9.9.9',
-        '208.67.222.222', '1.0.0.1', '8.8.4.4',
-        '185.228.168.9', '94.140.14.14'
-    ]
+testar_dns() {
+    servidor=$1
+    tempo_inicial=$(date +%s%3N)
 
-def carregar_arquivo(nome):
-    try:
-        with open(nome) as f:
-            return [linha.strip() for linha in f if linha.strip()]
-    except:
-        print("\n[!] Arquivo inválido ou não encontrado.\n")
-        return []
+    echo "" | timeout 1s nc -w1 -u "$servidor" 53 &>/dev/null
+    status=$?
 
-def dns_local_android():
-    try:
-        saida = subprocess.check_output("getprop | grep dns", shell=True).decode()
-        encontrados = set()
-        for linha in saida.strip().splitlines():
-            if "." in linha:
-                dns = linha.split(":")[1].strip().replace("[", "").replace("]", "")
-                if dns and dns not in encontrados:
-                    encontrados.add(dns)
-        return list(encontrados)
-    except:
-        return []
+    tempo_final=$(date +%s%3N)
+    tempo_total=$((tempo_final - tempo_inicial))
 
-def iniciar_teste_udp(lista):
-    resultados.clear()
-    print(f"\n🔁 Testando {len(lista)} DNS via UDP...\n")
-    threads = []
-    for ip in lista:
-        t = threading.Thread(target=testar_dns_udp, args=(ip,))
-        t.start()
-        threads.append(t)
-    for t in threads:
-        t.join()
+    if [[ $status -eq 0 ]]; then
+        echo -e "✅ $servidor - ${tempo_total}ms"
+        echo "$tempo_total $servidor" >> "$output"
+    else
+        echo -e "❌ $servidor - sem resposta"
+    fi
+}
 
-    if resultados:
-        print("\n🏆 TOP DNS FUNCIONAIS (UDP):\n")
-        resultados.sort(key=lambda x: x[1])
-        for ip, ms in resultados[:5]:
-            print(f"🥇 {ip} - {ms}ms")
-    else:
-        print("\n⚠️ Nenhum DNS respondeu via UDP.")
+total=$(wc -l < "$dns_temp")
+contador=1
 
-# ============ EXECUÇÃO ============
+while IFS= read -r ip; do
+    ip=$(echo "$ip" | tr -d '\r')
+    if [[ -n "$ip" ]]; then
+        echo -e "\n\e[1;36m[$contador/$total] Testando $ip...\e[0m"
+        testar_dns "$ip"
+        contador=$((contador+1))
+    fi
+done < "$dns_temp"
 
-while True:
-    limpar()
-    opcao = menu()
+echo -e "\n\e[1;32mServidores com resposta (ordenados por latência):\e[0m"
+sort -n "$output" | awk '{print "✅ " $2 " - " $1 "ms"}' | tee ordenados_$output
 
-    if opcao == '1':
-        dns_list = carregar_dns_basicos()
-        limpar()
-        banner()
-        iniciar_teste_udp(dns_list)
-        input("\n⚙️ Pressione ENTER para voltar ao menu...")
-
-    elif opcao == '2':
-        arquivo = input("\n📂 Digite o nome do arquivo .TXT com os DNS: ")
-        dns_list = carregar_arquivo(arquivo)
-        if dns_list:
-            limpar()
-            banner()
-            iniciar_teste_udp(dns_list)
-        input("\n⚙️ Pressione ENTER para voltar ao menu...")
-
-    elif opcao == '3':
-        dns_list = dns_local_android()
-        if dns_list:
-            limpar()
-            banner()
-            print("🔎 DNS detectado via getprop:")
-            for ip in dns_list:
-                print(f"📡 {ip}")
-            iniciar_teste_udp(dns_list)
-        else:
-            print("\n[!] Nenhum DNS local detectado.")
-        input("\n⚙️ Pressione ENTER para voltar ao menu...")
-
-    elif opcao == '4':
-        print("\n👋 Saindo...\n")
-        break
-
-    else:
-        print("\n[!] Opção inválida. Tente novamente.")
-        time.sleep(1)
+echo -e "\n\e[1;34mResultado salvo em: ordenados_$output\e[0m"
