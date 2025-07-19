@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>EG WEBCODE PORTAL DA TRANSPARÊNCIA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1e1e2f;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #007bff;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        header img {
+            max-height: 50px;
+            margin-right: 10px;
+        }
+        header h1 {
+            font-size: 1.5em;
+            color: #fff;
+            margin: 0;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            font-size: 16px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #3c3c50;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #3c3c50;
+        }
+        th, td {
+            border: 1px solid #555;
+            padding: 8px;
+            text-align: center;
+            word-break: break-word;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        .pagination {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin-top: 5px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+        #total {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #ccc;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 12px;
+                padding: 5px;
+            }
+            button, input {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="logo.png" alt="Logo EG WEBCODE">
+    <h1>EG WEBCODE PORTAL DA TRANSPARÊNCIA</h1>
+</header>
+
+<div class="container">
+    <input type="text" id="nome" placeholder="Digite o nome para buscar">
+    <input type="number" id="pagina" value="1" min="1" placeholder="Número da Página">
+    <button onclick="buscar()">Buscar</button>
+
+    <div id="total"></div>
+
+    <table id="resultado" style="display: none;">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Relação</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="pagination">
+        <button onclick="anterior()">⬅ Anterior</button>
+        <button onclick="proximo()">Próximo ➡</button>
+    </div>
+</div>
+
+<script>
+let paginaAtual = 1;
+let termoAtual = '';
+
+function buscar() {
+    const nome = document.getElementById('nome').value.trim();
+    const pagina = parseInt(document.getElementById('pagina').value) || 1;
+
+    if (!nome) {
+        alert('Digite um nome para buscar!');
+        return;
+    }
+
+    termoAtual = nome;
+    paginaAtual = pagina;
+
+    const nomeFormatado = encodeURIComponent(nome).replace(/%20/g, '+');
+    const url = `https://www.portaldatransparencia.gov.br/pessoa-fisica/busca/resultado?termo=${nomeFormatado}&pagina=${pagina}&tamanhoPagina=10&t=wdUJNlyLKulB1HjVJkn0&tokenRecaptcha=03AFcWeA4DXPwC9M1vCB5CO9KM1PqzNxwp2gNs80thmXkCJLg9w9PzDwxJv14wggAUnNAWamNIMRKxSq3a5_mRzciHUo1Lq5_-ICGBofvCfeHEhQOxJwP5e-ys9FXEmiJk9jF4LIGilEujQga0SDwN-WU7IJ0aWlKB32SAxceX9iz9kS49_ZhSC2oFaWv9CTTr9JaobNyNczk3gs-gOTfCtJf1wF-j69zM5AMfAwbPorXoYETIZ7sG8qYtcIemdPKvPJc78HqbM3DS4HUm3GhqM6ZNGqY5e8kW8-U3_rGUXBI3CfXrb9IKOS-vBI2J-xvQpz3KhNWJ3k2v2-9sP0MJJ3nqkgIoB5JQS14EK1plXeaQF2Ez2YFXH03ZfUbVF4-253NAon3xsAr_8lfaM-APpuabMFJ3cF1LihK3lEo9ebkrCs7du8M95XNhwqtRCJ9AueyUTAxvKmBMsM6cs8vMap7BQvPUkPyDqc-s6bOjfp8z11ahS_sVqZ9XLMEHdJriC-eGP3rXc5wrYOU3H9dG6xS8ykm1YCBxp4tJ85vyVWqXBmxo620uIhZea_6fc11FRXkXxfwKZzVMl5P-OQvqaqjHX94k486jeHP910SAbNIkeKqEqN3SCIj-XPkHLqh0-nkdr5Hl1sYi_xNzCfCJEiNTwtjwIjQ8vTidojbIfLHbRI3jzEYLS7XZIJusJClYJm1zZnT5ePRZn14Grse2aIzGzZoyM0ANOQbtV3WZm538bGkrUl5NFWYw4pF5yYx0jf-8fHzwMQgsAMMdQcuS2SdUXOtsOQOLae71Jlxe945kxllejVW-hoi0_dsd_ebKzSD84vTIpCRRwt5Qrn-8aJXwMFZOg9Z-ToGnWlFPSo0Cpp7N613aKK2K8ozdNH5SF3MpvZM7aj-bGU2mMGrWjmjo85OaNXF04RCGqmLS58r5JNx3mp6crhzZbqcbh0qntEanK6ATdyug`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const registros = data.registros || [];
+            const total = data.totalRegistros || 0;
+
+            document.getElementById('total').innerText = `Total de registros encontrados: ${total}`;
+            const tbody = document.querySelector('#resultado tbody');
+            tbody.innerHTML = '';
+
+            if (registros.length > 0) {
+                registros.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.nome}</td>
+                        <td>${item.cpfNis}</td>
+                        <td>${item.descricaoRelacoesGovernoFederal}</td>
+                        <td><button class="copy-btn" onclick="copiar('${item.nome} - ${item.cpfNis}')">Copiar</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('resultado').style.display = '';
+            } else {
+                document.getElementById('resultado').style.display = 'none';
+            }
+
+        })
+        .catch(() => {
+            document.getElementById('total').innerText = 'Erro ao buscar os dados.';
+            document.getElementById('resultado').style.display = 'none';
+        });
+}
+
+function copiar(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        alert('Copiado: ' + texto);
+    });
+}
+
+function proximo() {
+    paginaAtual++;
+    document.getElementById('pagina').value = paginaAtual;
+    buscar();
+}
+
+function anterior() {
+    if (paginaAtual > 1) {
+        paginaAtual--;
+        document.getElementById('pagina').value = paginaAtual;
+        buscar();
+    }
+}
+</script>
+
+</body>
+</html>
