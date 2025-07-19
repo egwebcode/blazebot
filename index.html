@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EG WEBCODE PORTAL DA TRANSPARÊNCIA</title>
+<link rel="icon" href="logo.png">
+<style>
+:root {
+    --bg: #ffffff;
+    --text: #000000;
+    --primary: #007bff;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+}
+body.dark {
+    --bg: #121212;
+    --text: #f0f0f0;
+}
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+    transition: 0.3s;
+}
+header img {
+    width: 50px;
+    margin-bottom: 10px;
+}
+h1 {
+    color: var(--primary);
+    margin: 10px 0;
+}
+input {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    border: 1px solid var(--text);
+    width: 250px;
+    max-width: 90%;
+    background: transparent;
+    color: var(--text);
+}
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 5px;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+button:hover {
+    opacity: 0.9;
+}
+.btn-buscar {
+    background: var(--success);
+}
+.btn-anterior, .btn-proximo {
+    background: var(--primary);
+}
+.btn-tema {
+    background: var(--warning);
+    color: #000;
+}
+.copy-btn {
+    background: var(--danger);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: none;
+}
+.resultado {
+    margin-top: 20px;
+    font-size: 14px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+th, td {
+    border: 1px solid var(--text);
+    padding: 5px;
+}
+th {
+    background: var(--primary);
+    color: #fff;
+}
+footer {
+    margin-top: 30px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+.botao-grupo {
+    margin: 10px 0;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <img src="logo.png" alt="EG WEBCODE">
+    <h1>EG WEBCODE PORTAL DA TRANSPARÊNCIA</h1>
+</header>
+
+<input type="text" id="nome" placeholder="Nome da pessoa">
+<input type="number" id="pagina" value="1" min="1">
+<br>
+
+<div class="botao-grupo">
+    <button class="btn-buscar" onclick="buscar()">🔍 Buscar</button>
+    <button class="btn-anterior" onclick="anterior()">⬅ Anterior</button>
+    <button class="btn-proximo" onclick="proximo()">Próximo ➡</button>
+</div>
+
+<p id="paginaAtual">Página: 1</p>
+
+<button class="btn-tema" onclick="trocarTema()">🌓 Trocar Tema</button>
+
+<div class="resultado" id="resultado"></div>
+
+<footer>© 2025 EG WEBCODE DEV — Todos os direitos reservados</footer>
+
+<script>
+let paginaAtual = 1;
+
+function buscar() {
+    const nome = document.getElementById('nome').value.trim();
+    if (!nome) return alert('Digite um nome!');
+    document.getElementById('pagina').value = paginaAtual;
+    document.getElementById('paginaAtual').innerText = `Página: ${paginaAtual}`;
+
+    fetch(`api.php?q=${encodeURIComponent(nome)}&p=${paginaAtual}`)
+    .then(res => res.json())
+    .then(data => {
+        let html = '';
+        if (!data.registros?.length) {
+            html = '<p>Nenhum registro encontrado.</p>';
+        } else {
+            html += `<p>Total de registros: ${data.totalRegistros}</p><table><tr><th>Nome</th><th>CPF</th><th>Ação</th></tr>`;
+            data.registros.forEach(item => {
+                html += `<tr>
+                    <td>${item.nome}</td>
+                    <td>${item.cpfNis}</td>
+                    <td><button class="copy-btn" onclick="copiar('${item.nome} - ${item.cpfNis}')">📋 Copiar</button></td>
+                </tr>`;
+            });
+            html += '</table>';
+        }
+        document.getElementById('resultado').innerHTML = html;
+    }).catch(() => {
+        document.getElementById('resultado').innerHTML = '<p>Erro na busca.</p>';
+    });
+}
+
+function copiar(texto) {
+    navigator.clipboard.writeText(texto).then(() => alert('Copiado: ' + texto));
+}
+
+function proximo() {
+    paginaAtual++;
+    buscar();
+}
+
+function anterior() {
+    if (paginaAtual > 1) {
+        paginaAtual--;
+        buscar();
+    }
+}
+
+function trocarTema() {
+    document.body.classList.toggle('dark');
+}
+</script>
+
+</body>
+</html>
